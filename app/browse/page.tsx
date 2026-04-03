@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import Header from "@/components/Header";
 
@@ -27,6 +27,85 @@ interface BrowseResponse {
   };
 }
 
+type SortKey = "name" | "industry" | "hq_location" | "latest_round" | "estimated_arr" | "founder_names" | "top_clients";
+type SortDir = "asc" | "desc";
+
+const ROUND_ORDER: Record<string, number> = {
+  "pre-seed": 0, "seed": 1, "series a": 2, "series b": 3, "series c": 4,
+  "series d": 5, "series e": 6, "series f": 7, "series g": 8, "ipo": 9,
+};
+
+function TypeaheadFilter({
+  label,
+  value,
+  onChange,
+  options,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [inputVal, setInputVal] = useState(value);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setInputVal(value), [value]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filtered = options.filter((o) =>
+    o.toLowerCase().includes(inputVal.toLowerCase())
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-light mb-2">
+        {label}
+      </label>
+      <input
+        type="text"
+        value={inputVal}
+        onChange={(e) => {
+          setInputVal(e.target.value);
+          setOpen(true);
+          if (!e.target.value) onChange("");
+        }}
+        onFocus={() => setOpen(true)}
+        placeholder={placeholder}
+        className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors"
+      />
+      {open && filtered.length > 0 && (
+        <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto">
+          <button
+            className="w-full text-left px-4 py-2 text-sm text-muted-light hover:bg-accent-light transition-colors"
+            onClick={() => { onChange(""); setInputVal(""); setOpen(false); }}
+          >
+            All
+          </button>
+          {filtered.map((opt) => (
+            <button
+              key={opt}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-accent-light transition-colors"
+              onClick={() => { onChange(opt); setInputVal(opt); setOpen(false); }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function BrowsePage() {
   const [data, setData] = useState<BrowseResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,6 +113,8 @@ export default function BrowsePage() {
   const [industry, setIndustry] = useState("");
   const [stage, setStage] = useState("");
   const [location, setLocation] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -61,7 +142,56 @@ export default function BrowsePage() {
     setLocation("");
   };
 
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(sortDir === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  };
+
+  const sortedResults = useMemo(() => {
+    if (!data?.results) return [];
+    const sorted = [...data.results].sort((a, b) => {
+      let aVal: string | number = "";
+      let bVal: string | number = "";
+
+      if (sortKey === "latest_round") {
+        aVal = ROUND_ORDER[(a.latest_round || "").toLowerCase()] ?? -1;
+        bVal = ROUND_ORDER[(b.latest_round || "").toLowerCase()] ?? -1;
+      } else if (sortKey === "top_clients") {
+        aVal = (a.top_clients || []).join(", ").toLowerCase();
+        bVal = (b.top_clients || []).join(", ").toLowerCase();
+      } else {
+        aVal = ((a[sortKey] as string) || "").toLowerCase();
+        bVal = ((b[sortKey] as string) || "").toLowerCase();
+      }
+
+      if (aVal < bVal) return sortDir === "asc" ? -1 : 1;
+      if (aVal > bVal) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [data?.results, sortKey, sortDir]);
+
   const hasFilters = search || industry || stage || location;
+
+  const SortHeader = ({ label, column }: { label: string; column: SortKey }) => (
+    <th
+      className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs cursor-pointer hover:text-accent transition-colors select-none"
+      onClick={() => handleSort(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {sortKey === column ? (
+          <span className="text-accent">{sortDir === "asc" ? "↑" : "↓"}</span>
+        ) : (
+          <span className="opacity-30">↕</span>
+        )}
+      </span>
+    </th>
+  );
 
   return (
     <>
@@ -91,57 +221,33 @@ export default function BrowsePage() {
                 className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors"
               />
             </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-light mb-2">
-                Industry
-              </label>
-              <select
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
-              >
-                <option value="">All Industries</option>
-                {data?.filters.industries.map((ind) => (
-                  <option key={ind} value={ind}>{ind}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-light mb-2">
-                Funding Stage
-              </label>
-              <select
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
-              >
-                <option value="">All Stages</option>
-                {data?.filters.stages.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-light mb-2">
-                Location
-              </label>
-              <select
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
-              >
-                <option value="">All Locations</option>
-                {data?.filters.locations.map((loc) => (
-                  <option key={loc} value={loc}>{loc}</option>
-                ))}
-              </select>
-            </div>
+            <TypeaheadFilter
+              label="Industry"
+              value={industry}
+              onChange={setIndustry}
+              options={data?.filters.industries || []}
+              placeholder="Type to filter..."
+            />
+            <TypeaheadFilter
+              label="Funding Stage"
+              value={stage}
+              onChange={setStage}
+              options={data?.filters.stages || []}
+              placeholder="Type to filter..."
+            />
+            <TypeaheadFilter
+              label="Location"
+              value={location}
+              onChange={setLocation}
+              options={data?.filters.locations || []}
+              placeholder="Type to filter..."
+            />
           </div>
 
           {hasFilters && (
             <div className="mt-4 flex items-center gap-3">
               <span className="text-sm text-muted">
-                {data?.results.length ?? 0} results
+                {sortedResults.length} results
               </span>
               <button
                 onClick={clearFilters}
@@ -161,23 +267,23 @@ export default function BrowsePage() {
           </div>
         )}
 
-        {!loading && data && data.results.length > 0 && (
+        {!loading && sortedResults.length > 0 && (
           <div className="bg-white border border-border rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border bg-[#f8f9fc]">
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Company</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Industry</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">HQ</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Latest Round</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Est. ARR</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Founders</th>
-                    <th className="text-left px-4 py-3 font-semibold text-muted-light uppercase tracking-wider text-xs">Top Clients</th>
+                    <SortHeader label="Company" column="name" />
+                    <SortHeader label="Industry" column="industry" />
+                    <SortHeader label="HQ" column="hq_location" />
+                    <SortHeader label="Latest Round" column="latest_round" />
+                    <SortHeader label="Est. ARR" column="estimated_arr" />
+                    <SortHeader label="Founders" column="founder_names" />
+                    <SortHeader label="Top Clients" column="top_clients" />
                   </tr>
                 </thead>
                 <tbody>
-                  {data.results.map((company, i) => (
+                  {sortedResults.map((company, i) => (
                     <tr
                       key={company.id}
                       className={`border-b border-border last:border-b-0 hover:bg-accent-light/50 transition-colors ${
@@ -228,7 +334,7 @@ export default function BrowsePage() {
           </div>
         )}
 
-        {!loading && data && data.results.length === 0 && (
+        {!loading && sortedResults.length === 0 && !loading && (
           <div className="text-center py-16">
             <p className="text-lg text-muted mb-2">
               No companies match your filters.
