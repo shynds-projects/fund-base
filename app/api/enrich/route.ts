@@ -24,11 +24,19 @@ export async function POST(request: NextRequest) {
     .eq("slug", slug)
     .single();
 
-  if (existing) {
+  if (existing && existing.enrichment_status === "complete") {
     return NextResponse.json({
       slug: existing.slug,
       status: existing.enrichment_status,
     });
+  }
+
+  // If failed or stuck in_progress, delete and retry
+  if (existing) {
+    await supabase.from("team_patterns").delete().eq("company_id", existing.slug);
+    await supabase.from("founders").delete().eq("company_id", existing.slug);
+    await supabase.from("funding_rounds").delete().eq("company_id", existing.slug);
+    await supabase.from("companies").delete().eq("slug", slug);
   }
 
   // Create placeholder
