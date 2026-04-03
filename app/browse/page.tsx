@@ -35,6 +35,28 @@ const ROUND_ORDER: Record<string, number> = {
   "series d": 5, "series e": 6, "series f": 7, "series g": 8, "ipo": 9,
 };
 
+const ARR_RANGES = [
+  { label: "Under $10M", min: 0, max: 10 },
+  { label: "$10M - $50M", min: 10, max: 50 },
+  { label: "$50M - $100M", min: 50, max: 100 },
+  { label: "$100M - $250M", min: 100, max: 250 },
+  { label: "$250M - $500M", min: 250, max: 500 },
+  { label: "$500M - $1B", min: 500, max: 1000 },
+  { label: "$1B+", min: 1000, max: Infinity },
+];
+
+function parseArrToMillions(arr: string | null): number | null {
+  if (!arr || arr === "Unknown") return null;
+  // Extract first number from strings like "$50M-$100M", "$1.5B-$2B", "$500M+"
+  const match = arr.match(/\$?([\d.]+)\s*(B|M|K)?/i);
+  if (!match) return null;
+  let val = parseFloat(match[1]);
+  const unit = (match[2] || "M").toUpperCase();
+  if (unit === "B") val *= 1000;
+  if (unit === "K") val /= 1000;
+  return val;
+}
+
 function TypeaheadFilter({
   label,
   value,
@@ -113,6 +135,7 @@ export default function BrowsePage() {
   const [industry, setIndustry] = useState("");
   const [stage, setStage] = useState("");
   const [location, setLocation] = useState("");
+  const [arrRange, setArrRange] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -140,6 +163,7 @@ export default function BrowsePage() {
     setIndustry("");
     setStage("");
     setLocation("");
+    setArrRange("");
   };
 
   const handleSort = (key: SortKey) => {
@@ -153,7 +177,21 @@ export default function BrowsePage() {
 
   const sortedResults = useMemo(() => {
     if (!data?.results) return [];
-    const sorted = [...data.results].sort((a, b) => {
+
+    // Apply ARR filter
+    let filtered = data.results;
+    if (arrRange) {
+      const range = ARR_RANGES.find((r) => r.label === arrRange);
+      if (range) {
+        filtered = filtered.filter((c) => {
+          const val = parseArrToMillions(c.estimated_arr);
+          if (val === null) return false;
+          return val >= range.min && val < range.max;
+        });
+      }
+    }
+
+    const sorted = [...filtered].sort((a, b) => {
       let aVal: string | number = "";
       let bVal: string | number = "";
 
@@ -175,7 +213,7 @@ export default function BrowsePage() {
     return sorted;
   }, [data?.results, sortKey, sortDir]);
 
-  const hasFilters = search || industry || stage || location;
+  const hasFilters = search || industry || stage || location || arrRange;
 
   const SortHeader = ({ label, column }: { label: string; column: SortKey }) => (
     <th
@@ -208,7 +246,7 @@ export default function BrowsePage() {
 
         {/* Filters */}
         <div className="bg-white border border-border rounded-2xl p-5 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-muted-light mb-2">
                 Search
@@ -241,6 +279,13 @@ export default function BrowsePage() {
               onChange={setLocation}
               options={data?.filters.locations || []}
               placeholder="Type to filter..."
+            />
+            <TypeaheadFilter
+              label="Est. ARR"
+              value={arrRange}
+              onChange={setArrRange}
+              options={ARR_RANGES.map((r) => r.label)}
+              placeholder="Revenue range..."
             />
           </div>
 
