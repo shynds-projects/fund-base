@@ -39,6 +39,9 @@ export default function Header() {
           <Link href="/" className="hover:text-accent transition-colors">
             Home
           </Link>
+          <Link href="/browse" className="hover:text-accent transition-colors">
+            Browse
+          </Link>
         </nav>
       </div>
     </header>
