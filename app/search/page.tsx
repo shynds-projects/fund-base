@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
 import CompanyCard from "@/components/CompanyCard";
 import type { Company } from "@/lib/types";
 
 export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-20 text-muted">Loading...</div>}>
+      <SearchContent />
+    </Suspense>
+  );
+}
+
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
