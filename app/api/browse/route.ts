@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   let query = supabase
     .from("companies")
-    .select("*, funding_rounds(*)")
+    .select("*, funding_rounds(*), founders(*)")
     .eq("enrichment_status", "complete")
     .order("name");
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
 
   let results = data || [];
 
-  // Filter by funding stage client-side since it requires joining
+  // Filter by funding stage
   if (stage && results.length > 0) {
     results = results.filter((company: Record<string, unknown>) => {
       const rounds = company.funding_rounds as Array<{ round_name: string }>;
@@ -43,14 +43,33 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  // Strip funding_rounds from response to keep it light
-  const cleaned = results.map(({ funding_rounds, ...rest }: Record<string, unknown>) => {
-    const rounds = funding_rounds as Array<{ round_name: string }>;
-    const latestRound = rounds && rounds.length > 0
-      ? rounds[rounds.length - 1]?.round_name
-      : null;
-    return { ...rest, latest_round: latestRound };
-  });
+  // Enrich with aggregated data
+  const cleaned = results.map(
+    ({
+      funding_rounds,
+      founders,
+      ...rest
+    }: Record<string, unknown>) => {
+      const rounds = (funding_rounds as Array<{ round_name: string; amount: string | null; sort_order: number }>) || [];
+      const founderList = (founders as Array<{ name: string }>) || [];
+
+      const sortedRounds = [...rounds].sort((a, b) => a.sort_order - b.sort_order);
+      const latestRound = sortedRounds.length > 0
+        ? sortedRounds[sortedRounds.length - 1]?.round_name
+        : null;
+      const totalRounds = sortedRounds.length;
+      const founderCount = founderList.length;
+      const founderNames = founderList.map((f) => f.name).join(", ");
+
+      return {
+        ...rest,
+        latest_round: latestRound,
+        total_rounds: totalRounds,
+        founder_count: founderCount,
+        founder_names: founderNames,
+      };
+    }
+  );
 
   // Get distinct values for filter dropdowns
   const allData = await supabase
