@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { createServerClient } from "@/lib/supabase";
 import type { Company } from "@/lib/types";
 import Header from "@/components/Header";
