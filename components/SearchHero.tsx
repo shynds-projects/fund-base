@@ -43,10 +43,17 @@ export default function SearchHero({ count }: { count: number }) {
         </form>
 
         {count > 0 && (
-          <p className="text-sm text-muted-light">
+          <p className="text-sm text-muted-light mb-4">
             {count} {count === 1 ? "company" : "companies"} tracked
           </p>
         )}
+
+        <a
+          href="/browse"
+          className="inline-block text-sm font-semibold text-accent border border-accent px-5 py-2.5 rounded-full hover:bg-accent hover:text-white transition-colors"
+        >
+          Browse All Companies ↗
+        </a>
       </div>
     </section>
   );
