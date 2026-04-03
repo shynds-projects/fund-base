@@ -42,7 +42,7 @@ export default function FounderCard({ founder }: { founder: Founder }) {
         {founder.previous_companies.map((co) => (
           <span
             key={co}
-            className="text-xs bg-[#f0ebe4] text-muted px-2.5 py-1 rounded-full"
+            className="text-xs bg-[#f0f1f5] text-muted px-2.5 py-1 rounded-full"
           >
             {co}
           </span>

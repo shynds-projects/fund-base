@@ -76,7 +76,7 @@ export default function BrowsePage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Company name..."
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#fdf8f3] text-sm focus:outline-none focus:border-accent transition-colors"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors"
               />
             </div>
 
@@ -88,7 +88,7 @@ export default function BrowsePage() {
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#fdf8f3] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
               >
                 <option value="">All Industries</option>
                 {data?.filters.industries.map((ind) => (
@@ -107,7 +107,7 @@ export default function BrowsePage() {
               <select
                 value={stage}
                 onChange={(e) => setStage(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#fdf8f3] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
               >
                 <option value="">All Stages</option>
                 {data?.filters.stages.map((s) => (
@@ -126,7 +126,7 @@ export default function BrowsePage() {
               <select
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#fdf8f3] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
+                className="w-full px-4 py-2.5 rounded-xl border border-border bg-[#f8f9fc] text-sm focus:outline-none focus:border-accent transition-colors appearance-none"
               >
                 <option value="">All Locations</option>
                 {data?.filters.locations.map((loc) => (

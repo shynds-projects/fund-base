@@ -35,7 +35,7 @@ export default function SearchHero({ count }: { count: number }) {
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-[#a8662e] transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-accent text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-[#4338ca] transition-colors"
             >
               Search
             </button>

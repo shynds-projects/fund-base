@@ -28,7 +28,7 @@ export default function RootLayout({
       lang="en"
       className={`${playfair.variable} ${nunito.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#fdf8f3] text-[#2d2416] font-[family-name:var(--font-nunito)]">
+      <body className="min-h-full flex flex-col bg-[#f8f9fc] text-[#1a1d2e] font-[family-name:var(--font-nunito)]">
         {children}
       </body>
     </html>

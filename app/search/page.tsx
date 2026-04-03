@@ -93,7 +93,7 @@ function SearchContent() {
             </p>
             <button
               onClick={handleEnrich}
-              className="bg-accent text-white px-6 py-3 rounded-full font-semibold hover:bg-[#a8662e] transition-colors"
+              className="bg-accent text-white px-6 py-3 rounded-full font-semibold hover:bg-[#4338ca] transition-colors"
             >
               Build this profile with AI ✦
             </button>
